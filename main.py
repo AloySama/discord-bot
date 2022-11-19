@@ -1,8 +1,6 @@
 import datetime
 import os
 
-from discord.ui import View
-
 from view import *
 from dotenv import load_dotenv
 from dataclasses import dataclass
@@ -42,6 +40,39 @@ async def pong(interaction: Interaction):
     command_latency = (datetime.datetime.now(datetime.timezone.utc) - interaction.created_at).microseconds
     await interaction.response.send_message(f"pong! bot latency: **{int(client.latency * 1000)}** ms\n"
                                             f"Whole command latency: **{command_latency}** ms")
+
+
+@tree.command(name="clear", description="clear message")
+@app_commands.checks.bot_has_permissions(administrator=True)
+async def to_clear(interaction: Interaction, clear: str) -> None:
+    if interaction.user.guild_permissions.administrator:
+        if clear == "all":
+            await interaction.response.send_message("Are you sure you want to clear all messages?",
+                                                    view=ClearView(interaction))
+            return
+        try:
+            clear = int(clear)
+            await interaction.response.send_message(f"Are you sure you want to clear {clear} messages?",
+                                                    view=ClearView(interaction, clear))
+        except ValueError:
+            await interaction.response.send_message("please provide a number!", ephemeral=True)
+    else:
+        await interaction.response.send_message("You must be an administrator to run this command!", ephemeral=True)
+
+
+@tree.command(name="poll", description="poll with closed questions")
+async def create_poll(interaction: Interaction, question: str):
+    view = PollView(interaction, question)
+    await interaction.response.send_message(view=view,
+                                            embed=view.update_embed(interaction.user.name))
+
+
+@tree.error
+async def on_app_command_error(interaction, error):
+    if isinstance(error, app_commands.BotMissingPermissions):
+        await interaction.response.send_message(error, ephemeral=True)
+    else:
+        raise error
 
 
 if __name__ == '__main__':
