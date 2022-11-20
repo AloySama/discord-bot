@@ -1,9 +1,12 @@
-import datetime
 import os
+import aiohttp
 
+from request import get_json
+from tools import remove_key_by_value
 from view import *
 from dotenv import load_dotenv
 from dataclasses import dataclass
+
 
 import discord
 from discord import app_commands
@@ -37,9 +40,7 @@ tree = app_commands.CommandTree(client)
 
 @tree.command(name="ping", description="pong!")
 async def pong(interaction: Interaction):
-    command_latency = (datetime.datetime.now(datetime.timezone.utc) - interaction.created_at).microseconds
-    await interaction.response.send_message(f"pong! bot latency: **{int(client.latency * 1000)}** ms\n"
-                                            f"Whole command latency: **{command_latency}** ms")
+    await interaction.response.send_message(f"pong! bot latency: **{int(client.latency * 1000)}** ms\n")
 
 
 @tree.command(name="clear", description="clear message")
@@ -65,6 +66,66 @@ async def create_poll(interaction: Interaction, question: str):
     view = PollView(interaction, question)
     await interaction.response.send_message(view=view,
                                             embed=view.update_embed(interaction.user.name))
+
+
+@tree.command(name="friendsteam", description="Return the number of friend in your steam account")
+async def get_friends_steam(interaction: Interaction, id_steam: str):
+    await interaction.response.send_message("Fetching data...")
+    data = await get_json(
+        f"http://api.steampowered.com/ISteamUser/GetFriendList/v0001/?key={os.getenv('STEAM_API_KEY')}&steamid={id_steam}&relationship=friend")
+    await interaction.edit_original_response(content=f"You have {len(data['friendslist']['friends'])} friends!")
+
+
+@tree.command(name="gamesteam", description="Return the number of games in steam store")
+async def number_of_game_steam(interaction: Interaction):
+    await interaction.response.send_message("Fetching data... can take a while..")
+    data = await get_json("http://api.steampowered.com/ISteamApps/GetAppList/v0002/?format=json")
+    await interaction.edit_original_response(content=f"There are {len(data['applist']['apps'])} games in the store")
+
+
+@tree.command(name="steamcategory", description="Retrieve games according to categories.")
+async def game_by_categories(interaction: Interaction, categories_steam: str, limit: int = 2):
+    async def get_game_by_categories(data, category: [], limit: int):
+        steam_games = {}
+
+        to_reach = 0
+        tmp = remove_key_by_value(data['applist']['apps'], "")
+
+        for (i, game) in enumerate(tmp):
+            if to_reach == limit or i == 100:
+                break
+            i += 1
+            fetch = await get_json(f"https://store.steampowered.com/api/appdetails?appids={game['appid']}")
+
+            try:
+                if all(item in [x['description'].lower() for x in fetch[str(game['appid'])]['data']['genres']] for item in category):
+                    steam_games[fetch[str(game['appid'])]['data']['name']] = {
+                        "header_image": fetch[str(game['appid'])]['data']['header_image'],
+                        "date": fetch[str(game['appid'])]['data']['release_date']['date'],
+                        "is_free": fetch[str(game['appid'])]['data']['is_free']
+                    }
+                    await interaction.edit_original_response(content=f"Fetching data... may take a while.. ({((to_reach+1)/limit)*100:.2f}%)")
+                    limit -= 1
+            except Exception as e:
+                print(e)
+        await interaction.edit_original_response(content="Fetching data... may take a while.. 100.00%")
+        return steam_games
+
+    def embed_games(games: {}) -> [discord.Embed]:
+        embeds = []
+
+        for game in games:
+            embed = discord.Embed(colour=discord.Colour.random(), title=game)
+            embed.set_image(url=games[game]['header_image'])
+            embed.add_field(name="Is free", value=games[game]['is_free'])
+            embed.add_field(name="Date", value=games[game]['date'])
+            embeds.append(embed)
+        return embeds
+
+    await interaction.response.send_message("Fetching data... may take a while.. (0%)")
+    data = await get_json("http://api.steampowered.com/ISteamApps/GetAppList/v0002/?format=json")
+    games = await get_game_by_categories(data, categories_steam.lower().split(' '), limit)
+    await interaction.edit_original_response(embeds=embed_games(games))
 
 
 @tree.error
