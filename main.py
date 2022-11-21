@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from random import shuffle
 
 from request import get_json
 from tools import remove_key_by_value, is_categories_allowed
@@ -93,7 +94,8 @@ async def game_by_categories(interaction: Interaction, categories_steam: str, li
         steam_games = {}
 
         to_reach = 0
-        tmp = remove_key_by_value(data['applist']['apps'], "")
+        tmp: list = remove_key_by_value(data['applist']['apps'], "")
+        shuffle(tmp)
 
         for (i, game) in enumerate(tmp):
             if to_reach == limit or i == 250:

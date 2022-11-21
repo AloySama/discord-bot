@@ -62,7 +62,7 @@ class PollView(View):
 
     @button(style=ButtonStyle.green, emoji="👍", custom_id="PollYes")
     async def yes_callback(self, interaction: Interaction, but: Button):
-        if interaction.user.name not in self.agree:
+        if interaction.user not in self.agree:
             if interaction.user.name in self.disagree:
                 self.disagree.remove(interaction.user.name)
             self.agree.append(interaction.user.name)
@@ -72,7 +72,7 @@ class PollView(View):
 
     @button(style=ButtonStyle.red, emoji="👎", custom_id="PollNo")
     async def no_callback(self, interaction: Interaction, but: Button):
-        if interaction.user.name not in self.disagree:
+        if interaction.user not in self.disagree:
             if interaction.user.name in self.agree:
                 self.agree.remove(interaction.user.name)
             self.disagree.append(interaction.user.name)
@@ -87,6 +87,11 @@ class PollView(View):
         embed.add_field(name="Agreed", value=self.format_string(self.agree))
         embed.add_field(name="Disagreed", value=self.format_string(self.disagree))
         return embed
+
+    async def on_timeout(self) -> None:
+        sentence = "Time's up! Here are the lists of people who agreed and disagreed:\n"
+
+        await self.interaction.edit_original_response(content=sentence, view=None)
 
     @staticmethod
     def format_string(array: []):
