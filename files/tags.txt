@@ -1,0 +1,79 @@
+Action
+Adventure
+Casual
+Experimental
+Puzzle
+Racing
+RPG
+Simulation
+Sports
+Strategy
+Tabletop
+Action RPG
+Action-Adventure
+Arcade
+Auto Battler
+Automobile Sim
+Base Building
+Baseball
+Basketball
+Battle Royale
+BMX
+Board Game
+Bowling
+Building
+Card Game
+Character Action Game
+Chess
+Clicker
+Cycling
+Diplomacy
+eSports
+Experimental
+Exploration
+Farming Sim
+Fighting
+Football
+God Game
+Golf
+Hacking
+Hidden Object
+Hockey
+Idler
+Interactive Fiction
+Management
+Match 3
+Medical Sim
+Mini Golf
+Mining
+MMORPG
+MOBA
+Motocross
+Open World
+Outbreak Sim
+Party-Based RPG
+Pinball
+Platformer
+Point & Click
+Rhythm
+Roguelike
+RTS
+Sandbox
+Shooter
+Skateboarding
+Skating
+Skiing
+Snowboarding
+Soccer
+Space Sim
+Stealth
+Strategy RPG
+Survival
+Tennis
+Tower Defense
+Trivia
+Turn-Based Strategy
+Visual Novel
+Walking Simulator
+Word Game
+Wrestling

@@ -1,12 +1,11 @@
 import os
-import aiohttp
-
-from request import get_json
-from tools import remove_key_by_value
-from view import *
-from dotenv import load_dotenv
 from dataclasses import dataclass
 
+from request import get_json
+from tools import remove_key_by_value, is_categories_allowed
+
+from view import *
+from dotenv import load_dotenv
 
 import discord
 from discord import app_commands
@@ -53,7 +52,11 @@ async def to_clear(interaction: Interaction, clear: str) -> None:
             return
         try:
             clear = int(clear)
-            await interaction.response.send_message(f"Are you sure you want to clear {clear} messages?",
+            if clear < 1:
+                await interaction.response.send_message("Sorry, but I can't do that :)", ephemeral=True)
+                return
+            await interaction.response.send_message(f"Are you sure you want to clear {clear} "
+                                                    f"{'message' if clear < 2 else 'messages'}?",
                                                     view=ClearView(interaction, clear))
         except ValueError:
             await interaction.response.send_message("please provide a number!", ephemeral=True)
@@ -85,6 +88,7 @@ async def number_of_game_steam(interaction: Interaction):
 
 @tree.command(name="steamcategory", description="Retrieve games according to categories.")
 async def game_by_categories(interaction: Interaction, categories_steam: str, limit: int = 2):
+
     async def get_game_by_categories(data, category: [], limit: int):
         steam_games = {}
 
@@ -121,10 +125,13 @@ async def game_by_categories(interaction: Interaction, categories_steam: str, li
             embed.add_field(name="Date", value=games[game]['date'])
             embeds.append(embed)
         return embeds
+    categories_steam = categories_steam.lower().split(',')
+    if not is_categories_allowed(categories_steam):
+        return await interaction.response.send_message("One of the tags in not in the list, please check the wiki to have a look to allowed tags :)")
 
     await interaction.response.send_message("Fetching data... may take a while.. (0%)")
     data = await get_json("http://api.steampowered.com/ISteamApps/GetAppList/v0002/?format=json")
-    games = await get_game_by_categories(data, categories_steam.lower().split(' '), limit)
+    games = await get_game_by_categories(data, categories_steam, limit)
     await interaction.edit_original_response(embeds=embed_games(games))
 
 

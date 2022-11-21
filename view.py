@@ -34,7 +34,10 @@ class ClearView(View):
 
     @button(style=ButtonStyle.green, emoji="✅", custom_id="yes")
     async def yes_callback(self, interaction: Interaction, but: Button):
-        await interaction.channel.purge(limit=self.limit)
+        if self.limit:
+            await interaction.channel.purge(limit=self.limit + 1)
+        else:
+            await interaction.channel.purge(limit=self.limit)
 
     @button(style=ButtonStyle.red, emoji="💀", custom_id="no")
     async def no_callback(self, interaction: Interaction, but: Button):
@@ -42,7 +45,10 @@ class ClearView(View):
         await interaction.channel.purge(limit=1)
 
     async def on_timeout(self) -> None:
-        await self.interaction.channel.purge(limit=1)
+        try:
+            await self.interaction.delete_original_response()
+        except discord.NotFound:
+            print("message already deleted")
 
 
 class PollView(View):
