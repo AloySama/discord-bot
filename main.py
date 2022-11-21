@@ -96,22 +96,27 @@ async def game_by_categories(interaction: Interaction, categories_steam: str, li
         tmp = remove_key_by_value(data['applist']['apps'], "")
 
         for (i, game) in enumerate(tmp):
-            if to_reach == limit or i == 100:
+            if to_reach == limit or i == 250:
                 break
             i += 1
             fetch = await get_json(f"https://store.steampowered.com/api/appdetails?appids={game['appid']}")
 
             try:
+                if any(item in fetch[str(game['appid'])]['data']['name'].lower() for item in ["demo", "dlc"]):
+                    continue
                 if all(item in [x['description'].lower() for x in fetch[str(game['appid'])]['data']['genres']] for item in category):
                     steam_games[fetch[str(game['appid'])]['data']['name']] = {
                         "header_image": fetch[str(game['appid'])]['data']['header_image'],
                         "date": fetch[str(game['appid'])]['data']['release_date']['date'],
-                        "is_free": fetch[str(game['appid'])]['data']['is_free']
+                        "is_free": fetch[str(game['appid'])]['data']['is_free'],
+                        "url": f"https://store.steampowered.com/app/{str(fetch[str(game['appid'])]['data']['steam_appid'])}/{fetch[str(game['appid'])]['data']['name'].replace(' ', '_')}"
                     }
-                    await interaction.edit_original_response(content=f"Fetching data... may take a while.. ({((to_reach+1)/limit)*100:.2f}%)")
-                    limit -= 1
+                    to_reach += 1
             except Exception as e:
                 print(e)
+            if i % 10 == 0:
+                await interaction.edit_original_response(
+                    content=f"Fetching data... may take a while.. ({max((to_reach / limit) * 100, (i / 250) * 100):.2f}%)")
         await interaction.edit_original_response(content="Fetching data... may take a while.. 100.00%")
         return steam_games
 
@@ -120,19 +125,24 @@ async def game_by_categories(interaction: Interaction, categories_steam: str, li
 
         for game in games:
             embed = discord.Embed(colour=discord.Colour.random(), title=game)
+            embed.add_field(name="Game page", value=f"[Link to page]({games[game]['url']})", inline=False)
             embed.set_image(url=games[game]['header_image'])
             embed.add_field(name="Is free", value=games[game]['is_free'])
             embed.add_field(name="Date", value=games[game]['date'])
             embeds.append(embed)
         return embeds
-    categories_steam = categories_steam.lower().split(',')
+
+    categories_steam = categories_steam.lower().strip().split(',')
     if not is_categories_allowed(categories_steam):
         return await interaction.response.send_message("One of the tags in not in the list, please check the wiki to have a look to allowed tags :)")
 
     await interaction.response.send_message("Fetching data... may take a while.. (0%)")
     data = await get_json("http://api.steampowered.com/ISteamApps/GetAppList/v0002/?format=json")
     games = await get_game_by_categories(data, categories_steam, limit)
-    await interaction.edit_original_response(embeds=embed_games(games))
+    if len(games) == 0:
+        await interaction.edit_original_response(content="Aight, I haven't found games according to your tags ¯\_(ツ)_/¯")
+    else:
+        await interaction.edit_original_response(embeds=embed_games(games))
 
 
 @tree.error

@@ -1,6 +1,6 @@
 import discord
-from discord.ui import View, button, Button, Item
-from discord import ButtonStyle, Interaction, Message
+from discord.ui import View, button, Button
+from discord import ButtonStyle, Interaction
 
 
 class HelloView(View):
